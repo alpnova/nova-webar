@@ -101,39 +101,8 @@ function animate() {
     // Future home of hologram animation logic
     if (novaParticles) {
         novaParticles.rotation.y += 0.0005;
-        const session = renderer.xr.getSession();
-
-        if (!hitTestSource && !hitTestSourceRequested && session) {
-            session.requestReferenceSpace('viewer').then((viewerSpace) => {
-                session.requestHitTestSource({ space: viewerSpace }).then((source) => {
-                    hitTestSource = source;
-                }).catch(err => console.error('Error requesting hit test source:', err));
-            }).catch(err => console.error('Error requesting viewer reference space:', err));
-            hitTestSourceRequested = true; 
-        }
-
-        if (hitTestSource) {
-            const hitTestResults = frame.getHitTestResults(hitTestSource);
-            if (hitTestResults.length) {
-                const hit = hitTestResults[0];
-                if (hit && referenceSpace) {
-                    const pose = hit.getPose(referenceSpace);
-                    if (pose) {
-                        reticle.visible = true;
-                        reticle.matrix.fromArray(pose.transform.matrix);
-                    } else {
-                        reticle.visible = false;
-                    }
-                } else {
-                    reticle.visible = false;
-                }
-            } else {
-                reticle.visible = false;
-            }
-        }
     }
 
+    controls.update(); // Required for damping
     renderer.render(scene, camera);
 }
-
-console.log('Nova WebAR script v2 loaded.');
