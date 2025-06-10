@@ -1,4 +1,28 @@
 import * as THREE from 'three';
+
+// --- START NEW DEBUG CODE ---
+function debugLog(message) {
+    let debugBox = document.getElementById('debug-box');
+    if (!debugBox) {
+        debugBox = document.createElement('div');
+        debugBox.id = 'debug-box';
+        debugBox.style.position = 'absolute';
+        debugBox.style.top = '10px';
+        debugBox.style.left = '10px';
+        debugBox.style.padding = '10px';
+        debugBox.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        debugBox.style.color = 'lime';
+        debugBox.style.fontFamily = 'monospace';
+        debugBox.style.fontSize = '12px';
+        debugBox.style.zIndex = '100';
+        debugBox.style.maxWidth = 'calc(100% - 40px)';
+        debugBox.style.wordWrap = 'break-word';
+        document.body.appendChild(debugBox);
+    }
+    debugBox.innerHTML += message + '<br>';
+    console.log(message); // Also log to console
+}
+// --- END NEW DEBUG CODE ---
 import { ARButton } from 'three/addons/webxr/ARButton.js';
 
 let camera, scene, renderer;
@@ -13,6 +37,7 @@ init();
 animate();
 
 function init() {
+    debugLog('Nova WebAR Debugger v2'); // Start logging
     const container = document.createElement('div');
     document.body.appendChild(container);
 
@@ -42,24 +67,29 @@ function init() {
     const customARButton = document.getElementById('ar-button');
 
     if (navigator.xr) {
+        debugLog('navigator.xr object found.');
         navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+            debugLog(`'immersive-ar' supported: ${supported}`);
             if (supported) {
                 customARButton.disabled = false;
                 customARButton.textContent = 'Start AR';
                 customARButton.onclick = () => {
-                    arButtonElement.onclick(); // Trigger the hidden ARButton's click
+                    arButtonElement.onclick();
                 };
             } else {
                 customARButton.disabled = true;
                 customARButton.textContent = 'AR Not Supported';
+                debugLog('Reason: isSessionSupported returned false.');
             }
-        }).catch(() => {
+        }).catch((err) => {
             customARButton.disabled = true;
             customARButton.textContent = 'AR Not Supported';
+            debugLog(`Error checking support: ${err.message || err}`);
         });
     } else {
         customARButton.disabled = true;
         customARButton.textContent = 'AR Not Supported';
+        debugLog('Reason: navigator.xr object not found.');
     }
 
     renderer.xr.addEventListener('sessionstart', () => {
