@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Nova WebAR</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000; /* Will be overridden by camera feed */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        #ar-button {
+            padding: 12px 20px;
+            font-size: 18px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            position: absolute;
+            z-index: 10;
+            bottom: 30px; /* Positioned a bit higher */
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        #ar-button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+        canvas {
+            display: block; /* Ensure canvas takes up space */
+        }
+    </style>
+</head>
+<body>
+    <button id="ar-button">Start AR</button>
+    <!-- Import three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
