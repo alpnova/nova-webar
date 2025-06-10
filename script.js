@@ -56,51 +56,16 @@ function init() {
     renderer.xr.enabled = true;
     container.appendChild(renderer.domElement);
 
-    const arButtonElement = ARButton.createButton(renderer, {
-        requiredFeatures: ['hit-test', 'dom-overlay'], // dom-overlay for custom button
-        domOverlay: { root: document.body } // Specify root for DOM overlay
-    });
-    
-    arButtonElement.style.display = 'none'; // Hide the default ARButton
+    // --- MODIFICATION FOR iOS BETA TEST ---
+    // Hide our custom button and use the default three.js ARButton
+    // to make the most basic AR request possible.
+    document.getElementById('ar-button').style.display = 'none';
+    debugLog('Requesting simplest AR session. Using default ARButton.');
+
+    const arButtonElement = ARButton.createButton(renderer, { requiredFeatures: [] }); // Explicitly ask for NO features
     document.body.appendChild(arButtonElement);
-
-    const customARButton = document.getElementById('ar-button');
-
-    if (navigator.xr) {
-        debugLog('navigator.xr object found.');
-        navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-            debugLog(`'immersive-ar' supported: ${supported}`);
-            if (supported) {
-                customARButton.disabled = false;
-                customARButton.textContent = 'Start AR';
-                customARButton.onclick = () => {
-                    arButtonElement.onclick();
-                };
-            } else {
-                customARButton.disabled = true;
-                customARButton.textContent = 'AR Not Supported';
-                debugLog('Reason: isSessionSupported returned false.');
-            }
-        }).catch((err) => {
-            customARButton.disabled = true;
-            customARButton.textContent = 'AR Not Supported';
-            debugLog(`Error checking support: ${err.message || err}`);
-        });
-    } else {
-        customARButton.disabled = true;
-        customARButton.textContent = 'AR Not Supported';
-        debugLog('Reason: navigator.xr object not found.');
-    }
-
-    renderer.xr.addEventListener('sessionstart', () => {
-        customARButton.textContent = 'Exit AR';
-    });
-    renderer.xr.addEventListener('sessionend', () => {
-        customARButton.textContent = 'Start AR';
-        reticle.visible = false;
-        hitTestSourceRequested = false;
-        hitTestSource = null;
-    });
+    // The default ARButton will now handle everything. It will show 'Enter AR' if supported,
+    // or 'AR NOT SUPPORTED' if not. This is the ultimate test.
 
     reticle = new THREE.Mesh(
         new THREE.RingGeometry(0.05, 0.07, 32).rotateX(-Math.PI / 2),
