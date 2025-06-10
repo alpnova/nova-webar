@@ -1,101 +1,92 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// --- START NEW DEBUG CODE ---
-function debugLog(message) {
-    let debugBox = document.getElementById('debug-box');
-    if (!debugBox) {
-        debugBox = document.createElement('div');
-        debugBox.id = 'debug-box';
-        debugBox.style.position = 'absolute';
-        debugBox.style.top = '10px';
-        debugBox.style.left = '10px';
-        debugBox.style.padding = '10px';
-        debugBox.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        debugBox.style.color = 'lime';
-        debugBox.style.fontFamily = 'monospace';
-        debugBox.style.fontSize = '12px';
-        debugBox.style.zIndex = '100';
-        debugBox.style.maxWidth = 'calc(100% - 40px)';
-        debugBox.style.wordWrap = 'break-word';
-        document.body.appendChild(debugBox);
-    }
-    debugBox.innerHTML += message + '<br>';
-    console.log(message); // Also log to console
-}
-// --- END NEW DEBUG CODE ---
-import { ARButton } from 'three/addons/webxr/ARButton.js';
-
-let camera, scene, renderer;
-let controller;
-let reticle;
-let hitTestSource = null;
-let hitTestSourceRequested = false;
-
-let placedObject = null; // To store our placed cube (later Nova)
+let camera, scene, renderer, controls;
+let novaParticles;
 
 init();
 animate();
 
 function init() {
-    debugLog('Nova WebAR Debugger v2'); // Start logging
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-
+    // Scene setup
     scene = new THREE.Scene();
 
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-    scene.add(camera); // Add camera to scene for AR
+    // Camera setup
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 1.5; // Move camera back to see the hologram
 
-    const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3);
-    light.position.set(0.5, 1, 0.25);
-    scene.add(light);
-
+    // Renderer setup
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.xr.enabled = true;
-    container.appendChild(renderer.domElement);
+    renderer.setClearColor(0x000000, 0); // Transparent background
+    document.body.appendChild(renderer.domElement);
 
-    // --- MODIFICATION FOR iOS BETA TEST ---
-    // Hide our custom button and use the default three.js ARButton
-    // to make the most basic AR request possible.
-    document.getElementById('ar-button').style.display = 'none';
-    debugLog('Requesting simplest AR session. Using default ARButton.');
+    // OrbitControls setup
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = false;
+    controls.minDistance = 0.5;
+    controls.maxDistance = 5;
 
-    const arButtonElement = ARButton.createButton(renderer, { requiredFeatures: [] }); // Explicitly ask for NO features
-    document.body.appendChild(arButtonElement);
-    // The default ARButton will now handle everything. It will show 'Enter AR' if supported,
-    // or 'AR NOT SUPPORTED' if not. This is the ultimate test.
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0x88ccff, 3);
+    pointLight.position.set(0, 0, 0.5);
+    scene.add(pointLight);
 
-    reticle = new THREE.Mesh(
-        new THREE.RingGeometry(0.05, 0.07, 32).rotateX(-Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color: 0xffffff }) // White reticle
-    );
-    reticle.matrixAutoUpdate = false;
-    reticle.visible = false;
-    scene.add(reticle);
+    // --- Create Nova Hologram Body ---
+    createNovaBody();
 
-    controller = renderer.xr.getController(0);
-    controller.addEventListener('select', onSelect);
-    scene.add(controller);
-
+    // Handle window resizing
     window.addEventListener('resize', onWindowResize);
 }
 
-function onSelect() {
-    if (reticle.visible) {
-        if (!placedObject) { 
-            const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-            const material = new THREE.MeshPhongMaterial({ color: 0x00ff00, transparent: true, opacity: 0.8 });
-            placedObject = new THREE.Mesh(geometry, material);
-            placedObject.position.setFromMatrixPosition(reticle.matrix);
-            scene.add(placedObject);
-            console.log('Cube placed!');
-        } else {
-            placedObject.position.setFromMatrixPosition(reticle.matrix);
-            console.log('Cube moved!');
-        }
+function createNovaBody() {
+    const particleCount = 20000; // Number of particles
+    const radius = 0.5; // Radius of the sphere
+
+    const positions = [];
+    const colors = [];
+
+    const color = new THREE.Color();
+
+    for (let i = 0; i < particleCount; i++) {
+        // Create a random point in a sphere (Fibonacci sphere would be more even, but random is fine for now)
+        const theta = Math.random() * 2 * Math.PI;
+        const phi = Math.acos((Math.random() * 2) - 1);
+        const r = Math.pow(Math.random(), 1 / 3) * radius;
+
+        const x = r * Math.sin(phi) * Math.cos(theta);
+        const y = r * Math.sin(phi) * Math.sin(theta);
+        const z = r * Math.cos(phi);
+
+        positions.push(x, y, z);
+
+        // Set color - blue/cyan gradient
+        const green = 0.5 + Math.random() * 0.5; // 0.5 to 1.0
+        const blue = 0.8 + Math.random() * 0.2; // 0.8 to 1.0
+        color.setRGB(0, green, blue);
+        colors.push(color.r, color.g, color.b);
     }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+        size: 0.008,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending, // Makes particles glow
+        depthWrite: false // Important for transparency
+    });
+
+    novaParticles = new THREE.Points(geometry, material);
+    scene.add(novaParticles);
 }
 
 function onWindowResize() {
@@ -105,12 +96,11 @@ function onWindowResize() {
 }
 
 function animate() {
-    renderer.setAnimationLoop(render);
-}
+    requestAnimationFrame(animate);
 
-function render(timestamp, frame) {
-    if (frame) {
-        const referenceSpace = renderer.xr.getReferenceSpace();
+    // Future home of hologram animation logic
+    if (novaParticles) {
+        novaParticles.rotation.y += 0.0005;
         const session = renderer.xr.getSession();
 
         if (!hitTestSource && !hitTestSourceRequested && session) {
